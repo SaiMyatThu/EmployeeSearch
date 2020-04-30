@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.smt.employee_management.domain.repository.employee.EmployeeRepository">
+	<resultMap id="employeeResultMap" type="Employee">
+		<id property="empId" column="employee_id" />
+		<result property="empName" column="employee_name" />
+		<result property="joinDate" column="join_date" />
+		<result property="email" column="email" />
+		<result property="phone" column="phone_num" />
+		<result property="datOfBirth" column="date_of_birth" />
+		<result property="gender" column="gender" />
+		<result property="martialStatus" column="martial_status" />
+		<result property="department" column="department_id" />
+		<result property="position" column="position_id" />
+		<result property="japLevel" column="jap_level" />
+		<result property="departmentName" column="department_name" />
+		<result property="positionName" column="position_name" />
+		<result property="japaneseLevel" column="japanese_level" />
+	</resultMap>
+
+	<sql id="WherePhrase">
+		<if
+			test="searchCriteria.searchCriteria != '' and searchCriteria.searchCriteria != null">
+    		<![CDATA[
+    		Where employee_id::varchar LIKE #{searchCriteria.searchCriteria} || '%' ESCAPE '~'
+    		OR employee_name LIKE #{searchCriteria.searchCriteria} || '%' 
+    		OR phone_num LIKE #{searchCriteria.searchCriteria} || '%'
+    		OR email LIKE #{searchCriteria.searchCriteria} || '%'
+    		]]>
+		</if>
+	</sql>
+
+	<insert id="create" parameterType="Employee">
+    <![CDATA[
+        INSERT INTO employee
+        ( 
+            employee_name,
+            join_date,
+            email,
+            phone_num,
+            date_of_birth,
+            gender, 
+            martial_status, 
+            department_id,
+            jap_level_id, 
+            position_id            
+        ) 
+        VALUES
+        ( 
+            #{empName}, 
+            TO_DATE(#{joinDate}, 'YYYY/MM/DD'),
+            #{email},
+            #{phone},
+            TO_DATE(#{datOfBirth}, 'YYYY/MM/DD'),
+            #{gender}, 
+            #{martialStatus}, 
+            #{department}::INT,
+            #{japLevel}::INT, 
+            #{position}::INT
+        )
+    ]]>
+	</insert>
+
+	<select id="getEmpCount" parameterType="SearchCriteria"
+		resultType="long">
+		SELECT count(*)
+		FROM (
+		select *
+		from employee
+		<include refid="WherePhrase" />
+		Order by employee_id
+		) sub;
+	</select>
+
+	<select id="findByCondition" parameterType="SearchCriteria"
+		resultMap="employeeResultMap">
+		SELECT
+		employee_id,
+		employee_name,
+		join_date,
+		email,
+		phone_num,
+		date_of_birth,
+		gender,
+		martial_status,
+		employee.department_id As
+		department,
+		department.department_name,
+		employee.position_id As
+		position,
+		position.position_name,
+		employee.jap_level_id As
+		jap_level_id,
+		japaneseSkill.japanese_level
+		FROM employee
+		LEFT JOIN department on
+		employee.department_id = department.department_id
+		LEFT JOIN position on
+		employee.position_id = position.position_id
+		LEFT JOIN japaneseSkill on
+		employee.jap_level_id = japaneseSkill.jap_level_id
+		<include refid="WherePhrase" />
+		ORDER BY
+		employee_id
+		LIMIT
+		#{pageable.pageSize}
+		OFFSET
+		#{pageable.offset};
+	</select>
+</mapper>
